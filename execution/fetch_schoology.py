@@ -22,7 +22,7 @@ import json
 import logging
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -41,7 +41,8 @@ CONFIG_FILE = PROJECT_ROOT / "data" / "grades_2026.json"
 CLASSLINK_URL = "https://login.classlink.com/my/kleinisd"
 GRADES_URL = "https://schoology.kleinisd.net/grades/grades"
 HOME_URL = "https://schoology.kleinisd.net/home"
-CALENDAR_BASE = "https://schoology.kleinisd.net/calendar/84470972/2026-"
+# Calendar AJAX base — month suffix (YYYY-MM) + timestamps appended at runtime
+CALENDAR_AJAX_BASE = "https://schoology.kleinisd.net/calendar/84470972/{month}?ajax=1&start={start}&end={end}"
 
 # Course name fragments → config subject id
 SUBJECT_MAP = {
@@ -208,25 +209,80 @@ def parse_grades_html(html: str, config: dict) -> dict:
     return subjects
 
 
-def parse_upcoming(soup: BeautifulSoup) -> list[dict]:
-    upcoming: list[dict] = []
-    # Schoology home sidebar: look for elements with upcoming/todo context
-    for el in soup.find_all(string=re.compile(r"upcoming|to.do|due", re.IGNORECASE)):
-        parent = el.parent
-        if parent:
-            items = parent.find_all_next("li", limit=10)
-            for item in items:
-                txt = item.get_text(strip=True)
-                date_m = re.search(r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d+", txt, re.IGNORECASE)
-                if date_m and len(txt) > 5:
-                    upcoming.append({
-                        "name": txt[:date_m.start()].strip() or txt[:60],
-                        "date_raw": date_m.group(0),
-                        "type": classify_assignment(txt),
-                    })
-            if upcoming:
-                break
-    return upcoming[:10]
+def fetch_calendar_events(page, weeks_ahead: int = 4) -> list[dict]:
+    """
+    Fetch upcoming assignment events via Schoology's calendar AJAX API.
+    Calls each month's endpoint (current + next) since the API is month-scoped.
+    Returns list of {title, course, subject_id, due_date, due_time, type, all_day}.
+    Only includes events on or after today, up to `weeks_ahead` weeks out.
+    """
+    today = date.today()
+    end_date = today + timedelta(weeks=weeks_ahead)
+    today_str = today.isoformat()
+
+    # Collect unique months to query
+    months_to_fetch: list[str] = []
+    cursor = today.replace(day=1)
+    while cursor <= end_date:
+        months_to_fetch.append(cursor.strftime("%Y-%m"))
+        # Advance to next month
+        if cursor.month == 12:
+            cursor = cursor.replace(year=cursor.year + 1, month=1)
+        else:
+            cursor = cursor.replace(month=cursor.month + 1)
+
+    # FullCalendar shows ~5 weeks per month; use wide window so Schoology returns all
+    start_ts = int(datetime(today.year, today.month, 1).timestamp()) - 7 * 86400
+    end_ts = int(datetime(end_date.year, end_date.month, end_date.day, 23, 59).timestamp()) + 7 * 86400
+
+    raw_seen: set[str] = set()
+    all_raw: list[dict] = []
+    for month in months_to_fetch:
+        url = CALENDAR_AJAX_BASE.format(month=month, start=start_ts, end=end_ts)
+        logger.info("Fetching calendar %s...", month)
+        try:
+            resp = page.request.get(url, timeout=15000)
+            if resp.status == 200:
+                for evt in resp.json():
+                    uid = evt.get("id", "") or evt.get("content_id", "")
+                    if uid and uid not in raw_seen:
+                        raw_seen.add(uid)
+                        all_raw.append(evt)
+        except Exception as exc:
+            logger.warning("Calendar fetch error for %s: %s", month, exc)
+
+    logger.info("Unique raw calendar events: %d", len(all_raw))
+
+    events: list[dict] = []
+    for evt in all_raw:
+        start_str = evt.get("start", "")
+        if not start_str or start_str[:10] < today_str:
+            continue
+
+        title = re.sub(r"<[^>]+>", "", evt.get("title", "")).strip()
+        if not title:
+            continue
+
+        content_title = evt.get("content_title", "")
+        course_name = content_title.split(":")[0].strip()
+        subject_id = match_subject(course_name)
+
+        e_type = evt.get("e_type", "assignment")
+        atype = classify_assignment(f"{title} {e_type}")
+
+        events.append({
+            "title": title,
+            "course": course_name,
+            "subject_id": subject_id,
+            "due_date": start_str[:10],
+            "due_time": start_str[11:16] if len(start_str) > 10 else "",
+            "type": atype,
+            "all_day": bool(evt.get("allDay", False)),
+        })
+
+    events.sort(key=lambda e: (e["due_date"], e["due_time"]))
+    logger.info("Upcoming events (≥ today, next %d weeks): %d", weeks_ahead, len(events))
+    return events
 
 
 def main() -> None:
@@ -269,30 +325,8 @@ def main() -> None:
 
         subjects = parse_grades_html(grades_html, config)
 
-        # Home page for upcoming
-        logger.info("Loading home page for upcoming items...")
-        page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(4000)
-        home_html = page.content()
-        home_soup = BeautifulSoup(home_html, "html.parser")
-        upcoming = parse_upcoming(home_soup)
-        logger.info("Found %d upcoming items.", len(upcoming))
-
-        # Calendar
-        today = date.today()
-        months = [f"{today.month:02d}"]
-        if today.month < 12:
-            months.append(f"{today.month + 1:02d}")
-        calendar_events: list[dict] = []
-        for mm in months:
-            logger.info("Scraping calendar month %s...", mm)
-            page.goto(CALENDAR_BASE + mm, wait_until="domcontentloaded", timeout=20000)
-            page.wait_for_timeout(2000)
-            cal_text = page.inner_text("body")
-            for line in cal_text.splitlines():
-                line = line.strip()
-                if len(line) > 5 and re.search(r"\d", line):
-                    calendar_events.append({"month": mm, "raw": line})
+        # Calendar AJAX — upcoming events for next 4 weeks
+        upcoming_events = fetch_calendar_events(page, weeks_ahead=4)
 
         browser.close()
 
@@ -300,8 +334,7 @@ def main() -> None:
         "generated_at": datetime.now().isoformat(),
         "fetched_date": date.today().isoformat(),
         "subjects": subjects,
-        "upcoming": upcoming,
-        "calendar_events": calendar_events,
+        "upcoming_events": upcoming_events,
     }
     OUT_FILE.write_text(json.dumps(out, indent=2))
     logger.info("Wrote Schoology data for %d subjects to %s", len(subjects), OUT_FILE)
@@ -312,6 +345,14 @@ def main() -> None:
         logger.info("  %-10s  %s  (%d graded, %d pending)",
                     sid, f"{s['current_pct']}%" if s['current_pct'] else "N/A",
                     asgn_count, pending_count)
+
+    # Print upcoming events summary
+    from itertools import groupby
+    for due_date, evts in groupby(upcoming_events, key=lambda e: e["due_date"]):
+        evts_list = list(evts)
+        logger.info("  %s: %d event(s) — %s",
+                    due_date, len(evts_list),
+                    ", ".join(e["title"][:30] for e in evts_list[:3]))
 
 
 if __name__ == "__main__":

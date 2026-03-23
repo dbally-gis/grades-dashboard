@@ -30,6 +30,26 @@
   .card-title { font-size: 13px; font-weight: 800; margin-bottom: 10px; }
   .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
   .footer { text-align: center; padding: 16px; font-size: 13px; color: #7c3aed; font-weight: 700; }
+
+  .wk-heading { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+    color: #94a3b8; margin: 14px 0 6px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+  .wk-heading:first-child { border-top: none; margin-top: 0; }
+  .wk-day, .wk-day-today, .wk-day-past { display: flex; gap: 8px; align-items: flex-start;
+    padding: 5px 0; border-bottom: 1px solid #f0f4f8; }
+  .wk-day:last-child, .wk-day-today:last-child { border-bottom: none; }
+  .wk-day-label { font-size: 11px; font-weight: 700; color: #64748b; width: 42px; flex-shrink: 0;
+    padding-top: 3px; }
+  .wk-day-today .wk-day-label { color: #2563eb; }
+  .wk-day-past .wk-day-label { color: #cbd5e1; }
+  .wk-events { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .wk-event { font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #f8fafc;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .wk-etype { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+    flex-shrink: 0; white-space: nowrap; }
+  .wk-title { color: #1e293b; line-height: 1.3; }
+  .wk-empty { font-size: 11px; color: #cbd5e1; padding: 3px 0; }
+  .wk-no-events { font-size: 11px; color: #cbd5e1; padding: 4px 0 8px; font-style: italic; }
+
 </style>
 </head>
 <body>
@@ -110,6 +130,16 @@
         <div style="width:99%;background:white;height:4px;border-radius:3px;"></div>
       </div>
     </div>
+  </div>
+
+  <div class="card" style="background:#fff;border:1px solid #e9d5ff;">
+    <div class="card-title" style="color:#7c3aed;">📅 What's Coming Up</div>
+    <div class="wk-heading">Week of Mar 23</div>
+<div class="wk-day-today"><div class="wk-day-label">Mon 23</div><div class="wk-events"><div class="wk-event" style="border-left:3px solid #276749;"><span class="wk-etype" style="background:#e0f2fe;color:#075985;">Assignment</span> <span class="wk-title">6.12C Vocabulary List</span> <span style="color:#94a3b8;font-size:9px;">23:00</span></div><div class="wk-event" style="border-left:3px solid #2b6cb0;"><span class="wk-etype" style="background:#e0f2fe;color:#075985;">Assignment</span> <span class="wk-title">6.12C_ Mean, Median, Mode, and Range Practice</span> <span style="color:#94a3b8;font-size:9px;">23:00</span></div><div class="wk-event" style="border-left:3px solid #c05621;"><span class="wk-etype" style="background:#e0f2fe;color:#075985;">Assignment</span> <span class="wk-title">Australia and Oceania Vocab</span> <span style="color:#94a3b8;font-size:9px;">23:00</span></div><div class="wk-event" style="border-left:3px solid #6b46c1;"><span class="wk-etype" style="background:#e0f2fe;color:#075985;">Assignment</span> <span class="wk-title">Mall's New Policy Unfair to Teens March 23</span> <span style="color:#94a3b8;font-size:9px;">23:00</span></div></div></div>
+<div class="wk-heading">Week of Mar 30</div>
+<div class="wk-no-events">No assignments posted yet for this week.</div>
+<div class="wk-heading">Week of Apr 6</div>
+<div class="wk-no-events">No assignments posted yet for this week.</div>
   </div>
 
 </div>

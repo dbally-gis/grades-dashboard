@@ -23,7 +23,7 @@ Outputs:
 import argparse
 import json
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -83,16 +83,18 @@ def type_tag_html(atype: str) -> str:
     return f'<span class="type-tag {cls}">{label}</span>'
 
 
-def load_data() -> tuple[dict, dict, dict]:
-    """Load config + live data files. Returns (config, schoology, skyward)."""
+def load_data() -> tuple[dict, dict, dict, list]:
+    """Load config + live data. Returns (config, schoology_subjects, skyward_subjects, upcoming_events)."""
     config = json.loads(CONFIG_FILE.read_text())
 
     schoology: dict = {}
+    upcoming_events: list = []
     if SCHOOLOGY_FILE.exists():
         raw = json.loads(SCHOOLOGY_FILE.read_text())
         schoology = raw.get("subjects", {})
-        logger.info("Loaded Schoology data: %d subjects, fetched %s",
-                    len(schoology), raw.get("fetched_date", "unknown"))
+        upcoming_events = raw.get("upcoming_events", [])
+        logger.info("Loaded Schoology data: %d subjects, %d upcoming events, fetched %s",
+                    len(schoology), len(upcoming_events), raw.get("fetched_date", "unknown"))
     else:
         logger.warning("No Schoology data found at %s — using fallback grades.", SCHOOLOGY_FILE)
 
@@ -102,9 +104,9 @@ def load_data() -> tuple[dict, dict, dict]:
         skyward = raw.get("subjects", {})
         logger.info("Loaded Skyward data: %d subjects", len(skyward))
     else:
-        logger.info("No Skyward PDF data found — Schoology will be used where available.")
+        logger.info("No Skyward data found — Schoology will be used where available.")
 
-    return config, schoology, skyward
+    return config, schoology, skyward, upcoming_events
 
 
 def merge_grades(config: dict, schoology: dict, skyward: dict) -> list[dict]:
@@ -174,6 +176,119 @@ def compute_gpa(subjects: list[dict]) -> dict:
     }
 
 
+SUBJECT_COLORS: dict[str, str] = {}  # filled lazily in build functions
+
+
+def _subject_color(subject_id: str | None, subjects: list[dict]) -> str:
+    for s in subjects:
+        if s["id"] == subject_id:
+            return s["color"]
+    return "#94a3b8"
+
+
+def build_weekly_html(upcoming_events: list[dict], subjects: list[dict],
+                      today: date, num_weeks: int = 3, compact: bool = False) -> str:
+    """
+    Build a weekly planner HTML block.
+    Shows Mon–Fri for `num_weeks` school weeks starting from the current week.
+    `compact=True` omits empty days and uses tighter styling.
+    """
+    # Start from Monday of the current week
+    week_start = today - timedelta(days=today.weekday())  # Monday
+
+    # Index events by due_date
+    events_by_date: dict[str, list[dict]] = {}
+    for evt in upcoming_events:
+        d = evt.get("due_date", "")
+        if d:
+            events_by_date.setdefault(d, []).append(evt)
+
+    type_colors = {
+        "test":       ("#fce7f3", "#9d174d", "Test/CCA"),
+        "quiz":       ("#fef3c7", "#92400e", "Quiz"),
+        "assignment": ("#e0f2fe", "#075985", "Assignment"),
+    }
+
+    html_parts: list[str] = []
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+
+    for week_offset in range(num_weeks):
+        wk = week_start + timedelta(weeks=week_offset)
+        wk_label = wk.strftime("Week of %b %-d")
+        html_parts.append(f'<div class="wk-heading">{wk_label}</div>')
+
+        week_has_events = False
+        for d_offset in range(5):  # Mon–Fri
+            day = wk + timedelta(days=d_offset)
+            day_str = day.isoformat()
+            evts = events_by_date.get(day_str, [])
+
+            is_today = day == today
+            is_past = day < today
+
+            if compact and not evts:
+                continue  # skip empty days in compact mode
+
+            if is_past and not evts:
+                continue  # never show past empty days
+
+            day_cls = "wk-day-today" if is_today else ("wk-day-past" if is_past else "wk-day")
+            day_label = day.strftime(f"{day_names[d_offset]} %-d")
+
+            event_html = ""
+            if evts:
+                week_has_events = True
+                for evt in evts:
+                    sid = evt.get("subject_id")
+                    color = _subject_color(sid, subjects)
+                    atype = evt.get("type", "assignment")
+                    bg, fg, label = type_colors.get(atype, ("#f1f5f9", "#475569", "Assignment"))
+                    time_str = evt.get("due_time", "")
+                    time_html = f' <span style="color:#94a3b8;font-size:9px;">{time_str}</span>' if time_str else ""
+                    event_html += (
+                        f'<div class="wk-event" style="border-left:3px solid {color};">'
+                        f'<span class="wk-etype" style="background:{bg};color:{fg};">{label}</span> '
+                        f'<span class="wk-title">{evt["title"]}</span>{time_html}'
+                        f'</div>'
+                    )
+            else:
+                event_html = '<div class="wk-empty">—</div>'
+
+            html_parts.append(
+                f'<div class="{day_cls}">'
+                f'<div class="wk-day-label">{day_label}</div>'
+                f'<div class="wk-events">{event_html}</div>'
+                f'</div>'
+            )
+
+        if not week_has_events and week_offset > 0:
+            html_parts.append('<div class="wk-no-events">No assignments posted yet for this week.</div>')
+
+    return "\n".join(html_parts)
+
+
+WEEKLY_CSS = """
+  .wk-heading { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+    color: #94a3b8; margin: 14px 0 6px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+  .wk-heading:first-child { border-top: none; margin-top: 0; }
+  .wk-day, .wk-day-today, .wk-day-past { display: flex; gap: 8px; align-items: flex-start;
+    padding: 5px 0; border-bottom: 1px solid #f0f4f8; }
+  .wk-day:last-child, .wk-day-today:last-child { border-bottom: none; }
+  .wk-day-label { font-size: 11px; font-weight: 700; color: #64748b; width: 42px; flex-shrink: 0;
+    padding-top: 3px; }
+  .wk-day-today .wk-day-label { color: #2563eb; }
+  .wk-day-past .wk-day-label { color: #cbd5e1; }
+  .wk-events { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .wk-event { font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #f8fafc;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .wk-etype { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+    flex-shrink: 0; white-space: nowrap; }
+  .wk-title { color: #1e293b; line-height: 1.3; }
+  .wk-empty { font-size: 11px; color: #cbd5e1; padding: 3px 0; }
+  .wk-no-events { font-size: 11px; color: #cbd5e1; padding: 4px 0 8px; font-style: italic; }
+"""
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # HTML GENERATORS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +356,8 @@ def _assignment_rows(assignments: list[dict]) -> str:
 
 
 def build_dad_html(subjects: list[dict], gpa: dict, config: dict,
-                   schoology_raw: dict, skyward_raw: dict, today: date) -> str:
+                   schoology_raw: dict, skyward_raw: dict, today: date,
+                   upcoming_events: list[dict] | None = None) -> str:
     quarter = f"Q{config['meta']['current_quarter']}"
     q_dates = config["meta"]["quarters"].get(quarter, {})
     q_end = q_dates.get("end", "")
@@ -382,6 +498,7 @@ def build_dad_html(subjects: list[dict], gpa: dict, config: dict,
   .recent-left .assignment-name {{ font-size: 12px; font-weight: 600; color: #2d3748; line-height: 1.3; }}
   .recent-left .assignment-meta {{ font-size: 10px; color: #a0aec0; margin-top: 2px; }}
   .footer {{ text-align: center; padding: 24px; font-size: 11px; color: #a0aec0; }}
+{WEEKLY_CSS}
 </style>
 </head>
 <body>
@@ -429,6 +546,10 @@ def build_dad_html(subjects: list[dict], gpa: dict, config: dict,
 
   <div class="side-panel">
     <div class="panel-card">
+      <div class="section-title">📅 Weekly Planner — next 3 weeks</div>
+      {build_weekly_html(upcoming_events or [], subjects, today, num_weeks=3)}
+    </div>
+    <div class="panel-card">
       <div class="section-title">Awaiting Grade</div>
       {awaiting_rows}
     </div>
@@ -460,7 +581,8 @@ function toggle(card) {{
 </html>'''
 
 
-def build_wife_html(subjects: list[dict], gpa: dict, config: dict, today: date) -> str:
+def build_wife_html(subjects: list[dict], gpa: dict, config: dict, today: date,
+                    upcoming_events: list[dict] | None = None) -> str:
     quarter = f"Q{config['meta']['current_quarter']}"
     updated_str = today.strftime("%B %-d, %Y")
     all_avg_str = f"{gpa['all_avg']:.1f}%" if gpa['all_avg'] else "N/A"
@@ -528,6 +650,7 @@ def build_wife_html(subjects: list[dict], gpa: dict, config: dict, today: date) 
   .dot {{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }}
   .gpa-strip {{ background: #1e293b; color: white; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }}
   .footer {{ text-align: center; font-size: 11px; color: #94a3b8; padding: 16px; }}
+{WEEKLY_CSS}
 </style>
 </head>
 <body>
@@ -545,13 +668,18 @@ def build_wife_html(subjects: list[dict], gpa: dict, config: dict, today: date) 
     <div class="card-title">Grades · {quarter}</div>
     {rows_html}
   </div>
+  <div class="card">
+    <div class="card-title">📅 Upcoming — next 3 weeks</div>
+    {build_weekly_html(upcoming_events or [], subjects, today, num_weeks=3, compact=True)}
+  </div>
 </div>
 <div class="footer">Updated {updated_str} · Skyward priority</div>
 </body>
 </html>'''
 
 
-def build_julia_html(subjects: list[dict], gpa: dict, config: dict, today: date) -> str:
+def build_julia_html(subjects: list[dict], gpa: dict, config: dict, today: date,
+                     upcoming_events: list[dict] | None = None) -> str:
     quarter = f"Q{config['meta']['current_quarter']}"
     q_dates = config["meta"]["quarters"].get(quarter, {})
     q_end_str = q_dates.get("end", "")
@@ -607,6 +735,7 @@ def build_julia_html(subjects: list[dict], gpa: dict, config: dict, today: date)
   .card-title {{ font-size: 13px; font-weight: 800; margin-bottom: 10px; }}
   .tiles {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }}
   .footer {{ text-align: center; padding: 16px; font-size: 13px; color: #7c3aed; font-weight: 700; }}
+{WEEKLY_CSS}
 </style>
 </head>
 <body>
@@ -641,6 +770,11 @@ def build_julia_html(subjects: list[dict], gpa: dict, config: dict, today: date)
     {tiles_html}
   </div>
 
+  <div class="card" style="background:#fff;border:1px solid #e9d5ff;">
+    <div class="card-title" style="color:#7c3aed;">📅 What's Coming Up</div>
+    {build_weekly_html(upcoming_events or [], subjects, today, num_weeks=3, compact=True)}
+  </div>
+
 </div>
 
 <div class="footer">Go Julia! 🌟</div>
@@ -650,7 +784,7 @@ def build_julia_html(subjects: list[dict], gpa: dict, config: dict, today: date)
 
 def main() -> None:
     args = parse_args()
-    config, schoology, skyward = load_data()
+    config, schoology, skyward, upcoming_events = load_data()
 
     if args.dry_run:
         logger.info("[DRY RUN] Would generate 3 HTML files with %d subjects.", len(config["subjects"]))
@@ -663,9 +797,9 @@ def main() -> None:
     logger.info("Merged %d subjects. Avg: %s", len(subjects),
                 f"{gpa['all_avg']:.1f}%" if gpa['all_avg'] else "N/A")
 
-    dad_html = build_dad_html(subjects, gpa, config, schoology, skyward, today)
-    wife_html = build_wife_html(subjects, gpa, config, today)
-    julia_html = build_julia_html(subjects, gpa, config, today)
+    dad_html = build_dad_html(subjects, gpa, config, schoology, skyward, today, upcoming_events)
+    wife_html = build_wife_html(subjects, gpa, config, today, upcoming_events)
+    julia_html = build_julia_html(subjects, gpa, config, today, upcoming_events)
 
     (PROJECT_ROOT / "index.html").write_text(dad_html)
     (PROJECT_ROOT / "wife.html").write_text(wife_html)
