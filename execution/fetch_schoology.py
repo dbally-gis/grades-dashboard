@@ -176,7 +176,16 @@ def parse_grades_html(html: str, config: dict) -> dict:
                 continue
 
             name = re.sub(r"\s*(assignment|test-quiz|assessment|grade_column)\s*", " ", header_text, flags=re.IGNORECASE).strip()
-            # Remove "Due MM/DD/YY" suffixes and "Note: ..." suffixes
+            # Capture "Due MM/DD/YY" before stripping it
+            due_date_str: str | None = None
+            due_m = re.search(r"Due\s+(\d+)/(\d+)/(\d+)", name, re.IGNORECASE)
+            if due_m:
+                mo, dy, yr = int(due_m.group(1)), int(due_m.group(2)), int(due_m.group(3))
+                full_yr = 2000 + yr if yr < 100 else yr
+                try:
+                    due_date_str = date(full_yr, mo, dy).isoformat()
+                except ValueError:
+                    pass
             name = re.sub(r"\s*Due\s+\d+/\d+/\d+.*$", "", name).strip()
             name = re.sub(r"\s*Note:.*$", "", name).strip()
             name = re.sub(r"\s*Click to launch.*$", "", name).strip()
@@ -190,6 +199,7 @@ def parse_grades_html(html: str, config: dict) -> dict:
                     "name": name, "earned": None, "possible": None, "pct": None,
                     "quarter": current_quarter, "source": "schoology",
                     "type": classify_assignment(name), "pending": True,
+                    "due_date": due_date_str,
                 })
                 continue
 
@@ -200,6 +210,7 @@ def parse_grades_html(html: str, config: dict) -> dict:
                     "name": name, "earned": earned, "possible": possible, "pct": pct,
                     "quarter": current_quarter, "source": "schoology",
                     "type": classify_assignment(name), "pending": False,
+                    "due_date": due_date_str,
                 })
 
         # Most recent first, cap at 15

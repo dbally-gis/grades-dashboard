@@ -344,11 +344,13 @@ def _assignment_rows(assignments: list[dict]) -> str:
                 score_html = f'<span class="asgn-score {sc}">{pct:.0f}</span>'
             else:
                 score_html = '<span class="asgn-pending">—</span>'
+        due = a.get("due_date", "")
+        due_html = f' · <span style="color:#94a3b8;">{due[5:]}</span>' if due else ""  # MM-DD
         rows.append(f'''
         <div class="asgn-row">
           <div class="asgn-left">
             <div class="asgn-name">{a["name"]}</div>
-            <div class="asgn-date">{src_tag} {type_html}</div>
+            <div class="asgn-date">{src_tag} {type_html}{due_html}</div>
           </div>
           {score_html}
         </div>''')
