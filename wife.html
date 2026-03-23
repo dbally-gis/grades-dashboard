@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Julia – Grades (Quick View)</title>
+<style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .score-hi, .s-hi { color: #276749; }
+  .score-md, .s-md { color: #d69e2e; }
+  .score-lo, .s-lo { color: #e53e3e; }
+  .src-tag { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 6px; text-transform: uppercase; }
+  .sky-tag { background: #e0f2fe; color: #0369a1; }
+  .sch-tag { background: #f3f4f6; color: #9ca3af; }
+  .type-tag { font-size: 9px; padding: 1px 5px; border-radius: 5px; font-weight: 600; }
+  .tt-quiz { background: #fef3c7; color: #92400e; }
+  .tt-asgn { background: #e0f2fe; color: #0c4a6e; }
+  .tt-test { background: #fce7f3; color: #831843; }
+
+  body { background: #f8fafc; color: #1e293b; }
+  .header { background: #1e293b; color: white; padding: 18px 24px; }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header .sub { font-size: 12px; opacity: 0.6; margin-top: 3px; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+  .alert-strip { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; color: #7f1d1d; font-size: 13px; font-weight: 600; }
+  .alert-strip ul { padding-left: 18px; }
+  .alert-strip li { margin-bottom: 4px; }
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px; }
+  .subj-row { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid #f0f4f8; gap: 12px; }
+  .subj-row:last-child { border-bottom: none; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .gpa-strip { background: #1e293b; color: white; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .footer { text-align: center; font-size: 11px; color: #94a3b8; padding: 16px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Julia Bally · Grades</h1>
+  <div class="sub">Krimmel Intermediate · March 23, 2026 · Q4</div>
+</div>
+<div class="wrap">
+  
+  <div class="gpa-strip">
+    <div><div style="font-size:10px;opacity:0.6;">All Subjects</div><div style="font-size:22px;font-weight:800;">N/A</div></div>
+    <div style="text-align:right;"><div style="font-size:10px;opacity:0.6;">Core Avg</div><div style="font-size:18px;font-weight:700;">N/A</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Grades · Q4</div>
+    
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#2b6cb0;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">Math</div>
+          <div style="font-size:11px;color:#64748b;">Melody Boyd</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#2b6cb0;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#2b6cb0;">—</div>
+      </div>
+    </div>
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#6b46c1;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">ELA</div>
+          <div style="font-size:11px;color:#64748b;">Libby Klempnauer</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#6b46c1;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#6b46c1;">—</div>
+      </div>
+    </div>
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#276749;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">Science</div>
+          <div style="font-size:11px;color:#64748b;">Jillian Mundy</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#276749;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#276749;">—</div>
+      </div>
+    </div>
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#c05621;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">Social Studies</div>
+          <div style="font-size:11px;color:#64748b;">Donnie Lancelin</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#c05621;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#c05621;">—</div>
+      </div>
+    </div>
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#0f766e;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">PE</div>
+          <div style="font-size:11px;color:#64748b;">Jessica Fanucchi</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#0f766e;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#0f766e;">—</div>
+      </div>
+    </div>
+    <div class="subj-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span class="dot" style="background:#9d174d;"></span>
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">Theatre Arts</div>
+          <div style="font-size:11px;color:#64748b;">Katherine Mehrens</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:0%;height:6px;background:#9d174d;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;width:44px;text-align:right;" class="">N/A</div>
+        <div style="font-size:13px;font-weight:700;width:22px;text-align:center;color:#9d174d;">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer">Updated March 23, 2026 · Skyward priority</div>
+</body>
+</html>

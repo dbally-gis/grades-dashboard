@@ -1,0 +1,114 @@
+{
+  "_comment": "Static config + last-known grades for Julia Bally, Krimmel Intermediate 2025-2026. Update manually when needed; live data written to .tmp/ by execution scripts.",
+
+  "meta": {
+    "student": "Julia Bally",
+    "school": "Krimmel Intermediate",
+    "district": "Klein ISD",
+    "grade_level": "6th",
+    "school_year": "2025-2026",
+    "current_quarter": 4,
+    "quarters": {
+      "Q1": { "start": "2025-08-14", "end": "2025-10-10" },
+      "Q2": { "start": "2025-10-13", "end": "2025-12-19" },
+      "Q3": { "start": "2026-01-07", "end": "2026-03-13" },
+      "Q4": { "start": "2026-03-23", "end": "2026-05-28" }
+    }
+  },
+
+  "subjects": [
+    {
+      "id": "math",
+      "label": "Math 6 Advanced",
+      "label_short": "Math",
+      "teacher": "Melody Boyd",
+      "period": 1,
+      "color": "#2b6cb0",
+      "color_bar": "#2b6cb0",
+      "color_badge_bg": "#ebf4ff",
+      "emoji": "➕",
+      "gradient": ["#3b82f6", "#1d4ed8"],
+      "schoology_id": "math-6-advanced",
+      "quarter_history": { "Q1": 97, "Q2": 91, "Q3": 95, "Q4": null }
+    },
+    {
+      "id": "ela",
+      "label": "ELA Reading 6 KP",
+      "label_short": "ELA",
+      "teacher": "Libby Klempnauer",
+      "period": 2,
+      "color": "#6b46c1",
+      "color_bar": "#6b46c1",
+      "color_badge_bg": "#f3ebff",
+      "emoji": "📖",
+      "gradient": ["#8b5cf6", "#6d28d9"],
+      "schoology_id": "ela-reading-6-kp",
+      "quarter_history": { "Q1": 88, "Q2": 87, "Q3": 86, "Q4": null }
+    },
+    {
+      "id": "science",
+      "label": "Science 6 KP",
+      "label_short": "Science",
+      "teacher": "Jillian Mundy",
+      "period": 7,
+      "color": "#276749",
+      "color_bar": "#38a169",
+      "color_badge_bg": "#e6fffa",
+      "emoji": "🔬",
+      "gradient": ["#10b981", "#059669"],
+      "schoology_id": "science-6-kp",
+      "quarter_history": { "Q1": 94, "Q2": 94, "Q3": 91, "Q4": null }
+    },
+    {
+      "id": "social",
+      "label": "SOC STUD 6 KP",
+      "label_short": "Social Studies",
+      "teacher": "Donnie Lancelin",
+      "period": 4,
+      "color": "#c05621",
+      "color_bar": "#dd6b20",
+      "color_badge_bg": "#fffaf0",
+      "emoji": "🌍",
+      "gradient": ["#f97316", "#ea580c"],
+      "schoology_id": "soc-stud-6-kp",
+      "quarter_history": { "Q1": 98, "Q2": 93, "Q3": 89, "Q4": null }
+    },
+    {
+      "id": "pe",
+      "label": "PE Girls 6",
+      "label_short": "PE",
+      "teacher": "Jessica Fanucchi",
+      "period": 5,
+      "color": "#0f766e",
+      "color_bar": "#14b8a6",
+      "color_badge_bg": "#f0fdfa",
+      "emoji": "🏃",
+      "gradient": ["#14b8a6", "#0d9488"],
+      "schoology_id": null,
+      "quarter_history": { "Q1": 100, "Q2": 100, "Q3": 100, "Q4": null }
+    },
+    {
+      "id": "theatre",
+      "label": "Theatre Arts Beg 6",
+      "label_short": "Theatre Arts",
+      "teacher": "Katherine Mehrens",
+      "period": 6,
+      "color": "#9d174d",
+      "color_bar": "#ec4899",
+      "color_badge_bg": "#fdf2f8",
+      "emoji": "🎭",
+      "gradient": ["#ec4899", "#db2777"],
+      "schoology_id": null,
+      "quarter_history": { "Q1": 100, "Q2": 100, "Q3": 100, "Q4": null }
+    }
+  ],
+
+  "schoology": {
+    "base_url": "https://schoology.kleinisd.net",
+    "grades_url": "https://schoology.kleinisd.net/grades/grades/report/2882945",
+    "home_url": "https://schoology.kleinisd.net/home",
+    "calendar_url_template": "https://schoology.kleinisd.net/calendar/84470972/2026-{MM}",
+    "parent_user_id": "2882945",
+    "student_id": "84470972"
+  }
+}
