@@ -1,6 +1,6 @@
 #!/bin/bash
 # Grades dashboard runner — called by launchd daily (8 PM)
-# Fetches Schoology data, optionally parses Skyward PDF, generates HTML, pushes to GitHub
+# Fetches Schoology (live Q4) + Skyward (official Q3), generates HTML, pushes to GitHub
 
 set -euo pipefail
 
@@ -16,12 +16,8 @@ source "$PROJ/.venv/bin/activate"
 echo "Fetching Schoology grades..." >> "$LOG"
 python3 execution/fetch_schoology.py >> "$LOG" 2>&1
 
-if [ -f "$PROJ/.tmp/skyward.pdf" ]; then
-  echo "Parsing Skyward PDF..." >> "$LOG"
-  python3 execution/parse_skyward.py >> "$LOG" 2>&1
-else
-  echo "No Skyward PDF found — skipping (using Schoology only)." >> "$LOG"
-fi
+echo "Fetching Skyward grades (direct login)..." >> "$LOG"
+python3 execution/parse_skyward.py >> "$LOG" 2>&1 || echo "Skyward fetch failed — using Schoology only." >> "$LOG"
 
 echo "Generating dashboard HTML..." >> "$LOG"
 python3 execution/generate_dashboard.py >> "$LOG" 2>&1
